@@ -2,6 +2,7 @@
 # Graham S. Paul - filtered_logger.py
 """filtering logs module.
 """
+
 import os
 import re
 import logging
@@ -10,8 +11,8 @@ from typing import List
 
 
 patterns = {
-    'extract': lambda x, y: r'(?P<field>{})=[^{}]*'.format('|'.join(x), y),
-    'replace': lambda x: r'\g<field>={}'.format(x),
+    'extract': lambda x, y: f"(?P<field>{'|'.join(x)})=[^{y}]*",
+    'replace': lambda x: f'\g<field>={x}',
 }
 PII_FIELDS = ("name", "email", "phone", "ssn", "password")
 
@@ -59,18 +60,15 @@ def main():
     """
     fields = "name,email,phone,ssn,password,ip,last_login,user_agent"
     columns = fields.split(',')
-    query = "SELECT {} FROM users;".format(fields)
+    query = f"SELECT {fields} FROM users;"
     info_logger = get_logger()
     connection = get_db()
     with connection.cursor() as cursor:
         cursor.execute(query)
         rows = cursor.fetchall()
         for row in rows:
-            record = map(
-                lambda x: '{}={}'.format(x[0], x[1]),
-                zip(columns, row),
-            )
-            msg = '{};'.format('; '.join(list(record)))
+            record = map(lambda x: f'{x[0]}={x[1]}', zip(columns, row))
+            msg = f"{'; '.join(list(record))};"
             args = ("user_data", logging.INFO, None, None, msg, None, None)
             log_record = logging.LogRecord(*args)
             info_logger.handle(log_record)
@@ -93,8 +91,7 @@ class RedactingFormatter(logging.Formatter):
         """formats a LogRecord.
         """
         msg = super(RedactingFormatter, self).format(record)
-        txt = filter_datum(self.fields, self.REDACTION, msg, self.SEPARATOR)
-        return txt
+        return filter_datum(self.fields, self.REDACTION, msg, self.SEPARATOR)
 
 
 if __name__ == "__main__":
